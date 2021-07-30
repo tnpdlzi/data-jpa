@@ -1,44 +1,8 @@
 package study.datajpa.repository;
 
-import org.springframework.stereotype.Repository;
-import study.datajpa.entity.Member;
+import org.springframework.data.jpa.repository.JpaRepository;
 import study.datajpa.entity.Team;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import java.util.List;
-import java.util.Optional;
-
-@Repository
-public class TeamRepository {
-
-    @PersistenceContext
-    private EntityManager em;
-
-    public Team save(Team team) {
-        em.persist(team);
-        return team;
-    }
-
-    public void delete(Team team) {
-        em.remove(team);
-    }
-
-    public List<Team> findAll() {
-        return em.createQuery("select t from Team t", Team.class)
-                .getResultList();
-    }
-
-
-    public Optional<Team> findById(Long id) {
-        Team team = em.find(Team.class, id);
-        // Member가 null일수도 있고 아닐수도 있다.
-        return Optional.ofNullable(team);
-    }
-
-    public long count() {
-        return em.createQuery("select count(t) from Team t", Long.class)
-                .getSingleResult();
-    }
-
+// 얘네는 @Repository 생략 가능. 인터페이스만 봐도 스프링 데이터 jpa가 알아서 인식한다.
+public interface TeamRepository extends JpaRepository<Team, Long> {
 }

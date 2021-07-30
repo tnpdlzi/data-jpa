@@ -47,7 +47,7 @@ class MemberJpaRepositoryTest {
 
         // 변경 감지 (더티체킹)를 이용한 변경. 그래서 변경 메서드가 따로 없다.
 //        findMember1.setUsername("updated member");
-        
+
         // 리스트 조회 검증
         List<Member> all = memberJpaRepository.findAll();
         assertThat(all.size()).isEqualTo(2);
