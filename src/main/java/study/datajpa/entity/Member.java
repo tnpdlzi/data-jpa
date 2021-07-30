@@ -8,6 +8,10 @@ import javax.persistence.*;
 @Getter @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @ToString(of = {"id", "username", "age"}) //team은 들어가면 안된다. 그럼 무한 루프 일어남. 연관관계 필드는 toString 하면 안 된다.
+@NamedQuery(
+        name = "Member.findByUsername",
+        query = "select m from Member m where m.username = :username"
+) // 실무에선 잘 사용하지 않는다. 리포지토리에 쿼리를 바로 지정하는 기능이 더 좋기 때문. 장점은 애플리케이션 로딩 시점에 문법 오류를 알려준다.
 public class Member {
 
     @Id
@@ -35,6 +39,11 @@ public class Member {
         if (team != null) {
             changeTeam(team);
         }
+    }
+
+    public Member(String username, int age) {
+        this.username = username;
+        this.age = age;
     }
 
 //    // setter 말고 이런 식으로 하는 게 더 나은 방법이다.
