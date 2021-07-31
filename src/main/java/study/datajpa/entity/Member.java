@@ -17,7 +17,7 @@ public class Member {
     @Id
     @GeneratedValue
     @Column(name = "member_id")
-    private Long Id;
+    private Long id;
     private String username;
     private int age;
 
@@ -51,7 +51,6 @@ public class Member {
 //        this.username = username;
 //    }
 
-    // == 연관관계 편의 메서드 == //
     // 팀에도 멤버가 추가되도록.
     public void changeTeam(Team team) {
         this.team = team;
