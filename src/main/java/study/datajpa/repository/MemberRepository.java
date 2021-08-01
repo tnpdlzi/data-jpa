@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 import study.datajpa.dto.MemberDto;
 import study.datajpa.entity.Member;
 
+import java.util.Collection;
 import java.util.List;
 
 // 인터페이스이고 구현체가 없다. 구현 코드가 하나도 없다. 인터페이스만 있다.
@@ -41,5 +42,9 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     // 근데 query dsl을 쓰자...
     @Query("select new study.datajpa.dto.MemberDto(m.id, m.username, t.name) from Member m join m.team t")
     List<MemberDto> findMemberDto();
+
+    // 컬렉션으로 검색.
+    @Query("select m from Member m where m.username in :names")
+    List<Member> findByNames(@Param("names") Collection<String> names);
 
 }
