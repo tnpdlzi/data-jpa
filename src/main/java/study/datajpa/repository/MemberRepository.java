@@ -8,6 +8,7 @@ import study.datajpa.entity.Member;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 // 인터페이스이고 구현체가 없다. 구현 코드가 하나도 없다. 인터페이스만 있다.
 public interface MemberRepository extends JpaRepository<Member, Long> {
@@ -46,5 +47,12 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     // 컬렉션으로 검색.
     @Query("select m from Member m where m.username in :names")
     List<Member> findByNames(@Param("names") Collection<String> names);
+
+
+    // 반환 타입을 아무거나 적어도 다 된다. 단건이라는게 보장만 된다면. 반환타입을 유연하게 지원해 준다.
+    // 이 외에도 다양한 타입을 지원한다. 공홈 참고. 이터레이터, 컬렉터, 리스트, 스트림, 퓨처, 컴플리터블 퓨처, 슬라이스, 페이지 등 다 지원한다.
+    List<Member> findListByUsername(String username); // 컬렉션
+    Member findMemberByUsername(String username); // 단건
+    Optional<Member> findOptionalByUsername(String username); // 단건 Optional
 
 }

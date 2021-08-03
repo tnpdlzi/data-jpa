@@ -161,4 +161,30 @@ class MemberRepositoryTest {
         }
     }
 
+
+    @Test
+    public void returnType() {
+        Member m1 = new Member("AAA", 10);
+        Member m2 = new Member("BBB", 20);
+        memberRepository.save(m1);
+        memberRepository.save(m2);
+
+        List<Member> aaa = memberRepository.findListByUsername("AAA");
+        Member findMember = memberRepository.findMemberByUsername("AAA");
+        Optional<Member> findOptional = memberRepository.findOptionalByUsername("AAA");
+
+        // 얘가 null을 반환하는 게 아닌 empty 컬렉션을 반환한다. 주의. List는 무조건 null이 아니다. 빈 것일 뿐.
+        List<Member> result = memberRepository.findListByUsername("asdasd");
+        System.out.println("result.size() = " + result.size());
+
+        // 얘는 null을 반환한다.
+        Member findWrongMember = memberRepository.findMemberByUsername("asdsa");
+        System.out.println("findWrongMember = " + findWrongMember);
+
+        // 얘는 Optional.empty가 나온다. 데이터가 있을 수도 있고 없을 수도 있으면 이걸 쓰자.
+        // 하나 타입을 조회하고 싶은데 두 개가 있으면 예외가 터진다. nonuniqueResultException이 터진다.
+        Optional<Member> findOptionalMember = memberRepository.findOptionalByUsername("asdsa");
+        System.out.println("findOptionalMember = " + findOptionalMember);
+    }
+
 }
