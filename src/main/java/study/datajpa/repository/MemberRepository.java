@@ -1,5 +1,9 @@
 package study.datajpa.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -55,4 +59,19 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     Member findMemberByUsername(String username); // 단건
     Optional<Member> findOptionalByUsername(String username); // 단건 Optional
 
+    // 반환 타입을 Page로 받는다.
+    // 두 번째 파라미터로 Pageable이라는 인터페이스를 넘긴다. 쿼리에 대한 조건이 들어감. 1페이지다 2페이지다 등.
+//    Page<Member> findByAge(int age, Pageable pageable);
+
+    // 카운트 쿼리만 분리
+    // 실무가 복잡해지면 성능을 위해 카운트 쿼리를 분리해주자.
+    // sorting조건도 이걸로 넣을 수 있다. 소팅이 복잡해지면 여기서 넣자.
+    @Query(value = "select m from Member m left join m.team t",
+            countQuery = "select count(m) from Member m") // 카운트 쿼리에서는 레프트조인 필요 없도록. (left join이라는 가정 하에)
+
+    Page<Member> findByAge(int age, Pageable pageable);
+
+    Slice<Member> findSlicedByAge(int age, Pageable pageable);
+
+    List<Member> findListByAge(int age, PageRequest pageRequest);
 }

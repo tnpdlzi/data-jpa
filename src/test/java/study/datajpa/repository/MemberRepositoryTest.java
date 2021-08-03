@@ -4,6 +4,10 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 import study.datajpa.dto.MemberDto;
@@ -185,6 +189,120 @@ class MemberRepositoryTest {
         // 하나 타입을 조회하고 싶은데 두 개가 있으면 예외가 터진다. nonuniqueResultException이 터진다.
         Optional<Member> findOptionalMember = memberRepository.findOptionalByUsername("asdsa");
         System.out.println("findOptionalMember = " + findOptionalMember);
+    }
+
+    @Test
+    public void pagings() {
+        //given
+        memberRepository.save(new Member("member1", 10));
+        memberRepository.save(new Member("member2", 10));
+        memberRepository.save(new Member("member3", 10));
+        memberRepository.save(new Member("member4", 10));
+        memberRepository.save(new Member("member5", 10));
+
+        int age = 10;
+
+        // 페이지는 0번부터 시작. 0페이지부터 3개 가져와라. 내림차순.
+        PageRequest pageRequest = PageRequest.of(0, 3, Sort.Direction.DESC, "username");
+
+        //when
+        // 파라미터에 페이지 조건이 들어간다. 페이저블 인터페이스만 넘기면 된다. 근데 PageRequest인데? 근데 부모를 따라가면 Pageable이 있다. PageRequest가 구현체인것.
+        Page<Member> page = memberRepository.findByAge(age, pageRequest);
+        // 토탈카운트 메서드는 필요없다. 반환타입 Page로 넘어오면 페이지는 토탈카운트가 필요하니 토탈카운트 쿼리까지 같이 날린다.
+
+        // slice는 가져올 때 3개를 가져오지 않고 +1 해서 4개를 요청해서 가져온다. slice return 함수를 가져와야한다. 안 그러면 상속관계가 Slice가 더 위쪽이라 받을 수 있어버린다.
+        // 얘는 count query를 보내지 않는다. 그리고 limit는 4개로 나간다.
+        // 모바일에서 더보기 사용할 때 사용. Page에서 Slice로 반환 타입만 바꾸면 된다.
+        Slice<Member> slice = memberRepository.findSlicedByAge(age, pageRequest);
+
+        // 다른 기능이 동작 안 하고 그냥 잘라서 가져오고 싶으면 그냥 List로 가져오면 된다. 그냥 페이징만 해서 가져오고 싶다면 그냥 이렇게 반환 타입만 List로 바꿔주면 된다.
+        List<Member> list = memberRepository.findListByAge(age, pageRequest);
+
+        //then
+        List<Member> content = page.getContent(); // content가져오기. 0번째 페이지 3개.
+        List<Member> slicedContent = slice.getContent(); // slice 컨텐트 가져오기.
+
+        long totalElements = page.getTotalElements(); // totalCount 가져오기.
+
+        for (Member member : content) {
+            System.out.println("member = " + member);
+        }
+        System.out.println("totalElements = " + totalElements);
+
+        // === 페이징 === //
+        assertThat(content.size()).isEqualTo(3);
+        assertThat(page.getTotalElements()).isEqualTo(5);
+        // 페이지 몇 페이지 인지도 다 계산해준다.
+        assertThat(page.getNumber()).isEqualTo(0);
+        // 전체 페이지 개수도 계산해 준다.
+        assertThat(page.getTotalPages()).isEqualTo(2);
+        // 이게 첫 번째 페이지인지 확인도 해 준다. 마지막 페이지도 가능.
+        assertThat(page.isFirst()).isTrue();
+        // 다음 페이지가 있는지도 확인해 준다. 이전 페이지도 가능.
+        assertThat(page.hasNext()).isTrue();
+
+        // === 슬라이스 === //
+        assertThat(slicedContent.size()).isEqualTo(3);
+        // 슬라이스는 +1 이기 때문에 전체 컨텐트를 가져오지 않는다.
+//        assertThat(slice.getTotalElements()).isEqualTo(5);
+        // 페이지 몇 페이지 인지도 다 계산해준다.
+        assertThat(slice.getNumber()).isEqualTo(0);
+        // 슬라이스는 +1이기 때문에 전체 페이지도 가져오지 않는다.
+//        assertThat(slice.getTotalPages()).isEqualTo(2);
+        // 이게 첫 번째 페이지인지 확인도 해 준다. 마지막 페이지도 가능.
+        assertThat(slice.isFirst()).isTrue();
+        // 다음 페이지가 있는지도 확인해 준다. 이전 페이지도 가능.
+        assertThat(slice.hasNext()).isTrue();
+
+
+    }
+
+    @Test
+    public void paging() {
+        //given
+        memberRepository.save(new Member("member1", 10));
+        memberRepository.save(new Member("member2", 10));
+        memberRepository.save(new Member("member3", 10));
+        memberRepository.save(new Member("member4", 10));
+        memberRepository.save(new Member("member5", 10));
+
+        int age = 10;
+
+        // 페이지는 0번부터 시작. 0페이지부터 3개 가져와라. 내림차순.
+        PageRequest pageRequest = PageRequest.of(0, 3, Sort.Direction.DESC, "username");
+
+        //when
+        // 실무에서 페이징을 잘 안 쓰는 이유는 페이징에서 토탈 카운트 쿼리 자체가 모든 컨텐트를 한 번 읽어야해서 성능이 안 나오기 때문이다. 이 토탈 카운트가 데이타가 많아질수록 안 좋아진다.
+        // 그래서 이 토탈카운트 쿼리를 잘 짜야할 때가 있다. 그래서 카운트 쿼리를 분리해주는 것도 지원한다.
+        // api에서 이 엔티티를 그대로 반환하면 안 된다. DTO로 변환해서 넘겨야한다.
+        Page<Member> page = memberRepository.findByAge(age, pageRequest);
+
+        // DTO로 쉽게 변환하는 방법
+        // 얘를 api로 넘기자.
+        Page<MemberDto> toMap = page.map(m -> new MemberDto(m.getId(), m.getUsername(), null));
+
+        //then
+        List<Member> content = page.getContent(); // content가져오기. 0번째 페이지 3개.
+
+        long totalElements = page.getTotalElements(); // totalCount 가져오기.
+
+        for (Member member : content) {
+            System.out.println("member = " + member);
+        }
+        System.out.println("totalElements = " + totalElements);
+
+        // === 페이징 === //
+        assertThat(content.size()).isEqualTo(3);
+        assertThat(page.getTotalElements()).isEqualTo(5);
+        // 페이지 몇 페이지 인지도 다 계산해준다.
+        assertThat(page.getNumber()).isEqualTo(0);
+        // 전체 페이지 개수도 계산해 준다.
+        assertThat(page.getTotalPages()).isEqualTo(2);
+        // 이게 첫 번째 페이지인지 확인도 해 준다. 마지막 페이지도 가능.
+        assertThat(page.isFirst()).isTrue();
+        // 다음 페이지가 있는지도 확인해 준다. 이전 페이지도 가능.
+        assertThat(page.hasNext()).isTrue();
+
     }
 
 }
