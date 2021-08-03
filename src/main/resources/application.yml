@@ -10,6 +10,7 @@ spring:
       ddl-auto: create
     properties:
       hibernate:
+#        dialect: 디비에 맞는 방언 입력.
 #        show_sql: true
         format_sql: true
 
