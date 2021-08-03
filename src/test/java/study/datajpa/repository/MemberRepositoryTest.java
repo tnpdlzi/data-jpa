@@ -14,6 +14,8 @@ import study.datajpa.dto.MemberDto;
 import study.datajpa.entity.Member;
 import study.datajpa.entity.Team;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +30,8 @@ class MemberRepositoryTest {
 
     @Autowired MemberRepository memberRepository;
     @Autowired TeamRepository teamRepository;
+    @PersistenceContext
+    EntityManager em;
 
     // interface밖에 없는데 전부 다 동작한다.
     @Test
@@ -302,6 +306,38 @@ class MemberRepositoryTest {
         assertThat(page.isFirst()).isTrue();
         // 다음 페이지가 있는지도 확인해 준다. 이전 페이지도 가능.
         assertThat(page.hasNext()).isTrue();
+
+    }
+
+
+    @Test
+    public void bulkUpdate() {
+        //given
+        memberRepository.save(new Member("member1", 10));
+        memberRepository.save(new Member("member2", 19));
+        memberRepository.save(new Member("member3", 20));
+        memberRepository.save(new Member("member4", 21));
+        memberRepository.save(new Member("member5", 40));
+
+        //when
+        // bulk 연산은 영속성 컨텍스트를 무시하고 디비에 바로 때려버리기 때문에 주의해야한다.
+        // 위의 save는 아직 영속성 컨텍스트에 있기 때문에 벌크를 때리면 안 맞을 수 있다. 벌크 연산할 때 조심해야한다.
+        int resultCount = memberRepository.bulkAgePlus(20);
+
+        // db에 남은 변경 내용 반영. save하면 디비에 flush를 반영하기 때문에 flush는 사실 필요하진 않음.
+//        em.flush();
+        // 영속성 컨텍스트 초기화 그런데 springdatajpa의 @Modifying의 clearAutomatically 옵션을 true 해 주면 없어도 된다.
+//        em.clear();
+        // 이러면 벌크연산 후의 영속성 컨텍스트를 초기화 된다.
+
+        List<Member> result = memberRepository.findByUsername("member5");
+        Member member5 = result.get(0);
+        System.out.println("member5 = " + member5); // em.clear를 안 하면 40 살로 나온다. 그런데 디비에는 41살로 되어있다.
+        // 영속성 컨텍스트에 값이 남아있기 때문. 1차 캐시에 값이 남아있음.
+
+        //then
+        // 20살 이상 다 나이 +1됨.
+        assertThat(resultCount).isEqualTo(3);
 
     }
 

@@ -5,6 +5,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import study.datajpa.dto.MemberDto;
@@ -74,4 +75,9 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     Slice<Member> findSlicedByAge(int age, Pageable pageable);
 
     List<Member> findListByAge(int age, PageRequest pageRequest);
+
+    // 얘가 있어야 jpa executeUpdate를 호출한다. 그래야 변경된 값의 갯수를 받을 수 있다. 얘가 변경한다는 것도 알게 된다. 얘를 빼면 에러가 난다.
+    @Modifying(clearAutomatically = true) // 쿼리가 나가고 난 다음에 영속성 컨텍스트의 em.clear 과정을 자동으로 해 준다.
+    @Query("update Member m set m.age = m.age + 1 where m.age >= :age")
+    int bulkAgePlus(@Param("age") int age);
 }
