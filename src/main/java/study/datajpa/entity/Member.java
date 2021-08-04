@@ -13,7 +13,7 @@ import javax.persistence.*;
         query = "select m from Member m where m.username = :username"
 ) // 실무에선 잘 사용하지 않는다. 리포지토리에 쿼리를 바로 지정하는 기능이 더 좋기 때문. 장점은 애플리케이션 로딩 시점에 문법 오류를 알려준다.
 @NamedEntityGraph(name = "Member.all", attributeNodes = @NamedAttributeNode("team")) // 실무에서는 잘 안 쓰긴 한다.
-public class Member extends JpaBaseEntity {
+public class Member extends BaseEntity {
 
     @Id
     @GeneratedValue
