@@ -112,5 +112,26 @@ public interface MemberRepository extends JpaRepository<Member, Long>, MemberRep
 
     // Projections. 반환 타입에 방금 만든 UsernameOnly를 넣으면 된다.
     // 프록시 객체가 담겨서 오게 된다.
+//    List<UsernameOnly> findProjectionsByUsername(@Param("username") String username);
     <T> List<T> findProjectionsByUsername(@Param("username") String username, Class<T> type);
+
+
+    // Native Query
+    // nativeQuery = true로 네이티브 쿼리임을 알 수 있게 된다.
+    // 웬만하면 사용하지 않는다. 가급적 Projection을 사용. 최후의 수단이다. 쿼리 그대로 나가게 된다.
+    // 한계가 많다. 엔티티에 맞게 다 적어줘야함.  member data도 다 찍어야함. 엔티티를 조회하는 것 보다는 DTO로 가져오겠다는 것. 근데 반환 타입이 몇 개 지원 안 된다.
+    // 동적 쿼리 불가. sort 정상동작하지 않을 수 있음. 애플리케이션 로딩 시점에 문법 확인 불가. 등의 제약 존재.
+    @Query(value = "select * from member where username = ?", nativeQuery = true)
+    Member findByNativeQuery(String username);
+
+    // 이런식으로 사용하자.
+    // projection을 사용.
+    // 정적 쿼리를 네이티브로 쓸 때는 projection 기능을 통해 할 수 있다. 매칭을 하면 프로젝션 기능을 그대로 쓰면 된다.
+    // 페이징이 된다는 장점이 있다.
+    @Query(value = "select m.member_id as id, m.username, t.name as teamName " +
+            "from member m left join team t",
+            countQuery = "select count(*) from member",
+            nativeQuery = true)
+    Page<MemberProjection> findByNativeProjection(Pageable pageable);
+
 }
