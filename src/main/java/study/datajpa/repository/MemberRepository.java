@@ -110,4 +110,7 @@ public interface MemberRepository extends JpaRepository<Member, Long>, MemberRep
     @Lock(LockModeType.PESSIMISTIC_WRITE) // jpa 거라는 것.
     List<Member> findLockByUsername(String username);
 
+    // Projections. 반환 타입에 방금 만든 UsernameOnly를 넣으면 된다.
+    // 프록시 객체가 담겨서 오게 된다.
+    <T> List<T> findProjectionsByUsername(@Param("username") String username, Class<T> type);
 }

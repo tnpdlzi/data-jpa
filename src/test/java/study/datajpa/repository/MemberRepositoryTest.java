@@ -462,4 +462,34 @@ class MemberRepositoryTest {
         assertThat(result.get(0).getUsername()).isEqualTo("m1");
 
     }
+
+    @Test
+    public void projections() {
+        //given
+        Team teamA = new Team("teamA");
+        em.persist(teamA);
+
+        Member m1 = new Member("m1", 0, teamA);
+        Member m2 = new Member("m2", 0, teamA);
+        em.persist(m1);
+        em.persist(m2);
+
+        em.flush();
+        em.clear();
+
+        //when
+        // m1, m2만 뽑고 싶을 때
+        // 실제 구현체는 스프링 데이터 jpa가 만들어서 다 반환 해 준다.
+        // 원하는 데이터만 찍어서 가져올 때 도움이 된다.
+        // 프로젝션 대상이 root 엔티티면 유용. 그게 아니면 최적화가 안 돼서 애매하다. 복잡해지면 query dsl을 쓰자.
+        List<NestedClosedProjections> result = memberRepository.findProjectionsByUsername("m1", NestedClosedProjections.class);// 이게 동적 projection.
+        for (NestedClosedProjections nestedClosedProjections : result) {
+            String username = nestedClosedProjections.getUsername();
+            System.out.println("username = " + username);
+            String name = nestedClosedProjections.getTeam().getName();
+            System.out.println("name = " + name);
+        }
+
+    }
+
 }
