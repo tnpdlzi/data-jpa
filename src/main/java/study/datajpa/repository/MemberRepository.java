@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Optional;
 
 // 인터페이스이고 구현체가 없다. 구현 코드가 하나도 없다. 인터페이스만 있다.
-public interface MemberRepository extends JpaRepository<Member, Long> {
+public interface MemberRepository extends JpaRepository<Member, Long>, MemberRepositoryCustom { // 인터페이스 상속받음으로 내가 만들고 싶은 기능을 구현한 다른 구현 Impl클래스에 있는게 실행
 
     // 구현하지 않아도 동작한다. 쿼리메소드 기능.
     // 메소드 이름으로 쿼리를 생성해준다. 관례를 가지고.

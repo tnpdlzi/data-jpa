@@ -33,6 +33,9 @@ class MemberRepositoryTest {
     @PersistenceContext
     EntityManager em;
 
+    // 이런 식으로 하나에 다 몰아넣기 보다는 이렇게 분리할 필요가 있따. 커맨드와 쿼리의 분리. 핵심 비즈니스 로직과 화면의 분리. 라이프사이클에 따른 분리 등을 고려해야한다.
+    @Autowired MemberQueryRepository memberQueryRepository;
+
     // interface밖에 없는데 전부 다 동작한다.
     @Test
     public void testMember() {
@@ -422,4 +425,9 @@ class MemberRepositoryTest {
         List<Member> findMember = memberRepository.findLockByUsername("member1");
     }
 
+    @Test
+    public void callCustom() {
+        // 구현된 거가 실행된 거 확인 가능
+        List<Member> result = memberRepository.findMemberCustom();
+    }
 }
