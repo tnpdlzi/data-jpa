@@ -4,10 +4,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Slice;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 import study.datajpa.dto.MemberDto;
@@ -429,5 +426,40 @@ class MemberRepositoryTest {
     public void callCustom() {
         // 구현된 거가 실행된 거 확인 가능
         List<Member> result = memberRepository.findMemberCustom();
+    }
+
+    // 얘의 문제는 inner join은 되는데 outer join이 안 된다. 그리고 중첩 제약조건도 안 된다. 매칭 조건도 단순하다. 실무에서는 query dsl 사용하자.
+    @Test
+    public void queryByExample() {
+        //given
+        Team teamA = new Team("teamA");
+        em.persist(teamA);
+
+        Member m1 = new Member("m1", 0, teamA);
+        Member m2 = new Member("m2", 0, teamA);
+        em.persist(m1);
+        em.persist(m2);
+
+        em.flush();
+        em.clear();
+
+        //when
+//        memberRepository.findByUsername("m1"); 이건 정적일 때 쓰는거. 동적일 땐 다르게.
+        //Probe --> 실제 도메인 객체.
+        // 도메인 객체 자체를 가지고 그대로 검색조건을 만들어 버리는 것.
+        Member member = new Member("m1"); // 엔티티 자체가 검색 조건이 된다.
+        Team team = new Team("teamA");
+        member.setTeam(team);
+
+        // null은 무시하는데 프리미티브 타입은 0을 가져오기 때문에 무시하겠다고 한것.
+        // age는 다 무시하겠다.
+        ExampleMatcher matcher = ExampleMatcher.matching()
+                .withIgnorePaths("age");
+        // prove와 matcher로 구성.
+        Example<Member> example = Example.of(member, matcher);// entity로 example 만들기.
+
+        List<Member> result = memberRepository.findAll(example); // example을 파라미터로 받는 걸 기본 기능으로 넣어버렸다. spring data jpa의 jpa repository에서 queryByExampleExecutor가 들어가있다.
+        assertThat(result.get(0).getUsername()).isEqualTo("m1");
+
     }
 }
