@@ -4,13 +4,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import study.datajpa.dto.MemberDto;
 import study.datajpa.entity.Member;
 
+import javax.persistence.LockModeType;
+import javax.persistence.QueryHint;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -80,4 +80,34 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     @Modifying(clearAutomatically = true) // 쿼리가 나가고 난 다음에 영속성 컨텍스트의 em.clear 과정을 자동으로 해 준다.
     @Query("update Member m set m.age = m.age + 1 where m.age >= :age")
     int bulkAgePlus(@Param("age") int age);
+
+    @Query("select m from Member m left join fetch m.team") // fetch join ---> 연관된 팀을 한방 쿼리로 다 긁어온다.
+    List<Member> findMemberFetchJoin();
+
+    @Override // findAll Override
+    @EntityGraph(attributePaths = {"team"}) // jpql사용 안 하고 fetchjoin 가능 이거 내부적으로는 사실 fetch join이다.
+    List<Member> findAll();
+
+    // 이런 식으로 쿼리 안에서 페치 조인만 살짝 추가하는 것도 가능한다.
+    @EntityGraph(attributePaths = {"team"})
+    @Query("select m from Member m")
+    List<Member> findMemberEntityGraph();
+
+    // 팀까지 가져오자.
+//    @EntityGraph(attributePaths = {"team"})
+    @EntityGraph("Member.all") // named entity graph. 근데 이거 실무에서 잘 안 쓴다.
+    List<Member> findEntityGraphByUsername(@Param("username") String username);
+
+
+    // jpa 제공 queryhint.
+    @QueryHints(value = @QueryHint(name = "org.hibernate.readOnly", value = "true"))
+    Member findReadOnlyByUsername(String username);
+
+    //select for update. 비관적인 lock. select 할 때 다른 애들 손대지 말라는 lock을 걸 수 있다.
+
+    // jpa가 제공하는 락을 편리하게.
+    // 실시간 트래픽이 많은 애들은 락을 걸지 말자. 돈을 맞추거나 하는 걸 할 때 사용하자.
+    @Lock(LockModeType.PESSIMISTIC_WRITE) // jpa 거라는 것.
+    List<Member> findLockByUsername(String username);
+
 }

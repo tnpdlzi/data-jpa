@@ -341,4 +341,85 @@ class MemberRepositoryTest {
 
     }
 
+    @Test
+    public void findMemberLazy() {
+        //given
+        //member1 -> teamA
+        //member2 -> teamB
+
+        Team teamA = new Team("teamA");
+        Team teamB = new Team("teamB");
+        teamRepository.save(teamA);
+        teamRepository.save(teamB);
+        Member member1 = new Member("member1", 10, teamA);
+        Member member2 = new Member("member2", 10, teamB);
+        memberRepository.save(member1);
+        memberRepository.save(member2);
+
+        em.flush();
+        em.clear();
+
+        //when
+        // select Member --> N + 1  문제 발생.
+//        List<Member> members = memberRepository.findAll();
+        // fetch join으로 한방에 다 긁어오기. 해결. 가짜 프록시 객체가 아닌 진짜 객체가 들어가게 된다.
+//        List<Member> members = memberRepository.findMemberFetchJoin();
+
+        // Entity Graph 설정 한 후의 findAll하면 lazy로딩 되는 것 없이 member와 team을 같이 가져온다.
+        //        List<Member> members = memberRepository.findAll();
+
+        // entity graph를 사용하면 fetch join이 편리해진다.
+        List<Member> members = memberRepository.findEntityGraphByUsername("member1");
+
+
+        for (Member member : members) {
+            System.out.println("member = " + member.getUsername());
+
+            // 하이버네이트 프록시 객체가 나타난다. lazy면 프록시라는 가짜 객체를 가지고 해놨다가 나중에 실제 데이터를 호출해 집어넣는다.
+            System.out.println("member.teamClass = " + member.getTeam().getClass());
+
+            // 팀을 디비에서 가져온다. 팀의 이름을 가져와야하기 때문에 가져오게된다. 이 때 프록시를 초기화 한다.
+            System.out.println("member.team = " + member.getTeam().getName());
+        }
+
+    }
+
+    @Test
+    public void queryHint() {
+        //given
+        Member member1 = memberRepository.save(new Member("member1", 10));
+        em.flush(); // 여기엔 영속성 컨텍스트가 남아있다.
+        em.clear(); // 이러면 영속성 컨텍스트가 다 날아간다.
+        
+        //when
+//        Member findMember = memberRepository.findById(member1.getId()).get();// 실무에서는 get 쓰면 안 된다.
+        // 변경 안 하고 읽기만 하겠다! 할 경우 객체를 안 만들고 싶다! 그런데도 이걸 가져오는 순간 원본과 복제본을 만들어버린다. 즉 비효율적인 리소스가 생긴다.
+        // 100퍼 조회용으로 사용 할 때 hibernate가 hint로 제공한다.
+//        findMember.setUsername("member2"); // 변경 감지 동작. update query가 나간다.
+
+        // 전체 어플리케이션 기준으로 해서 전부다 리드온리로 해야지! 할 필요는 없다. 전체로 봤을 땐 성능 최적화에 크게 작동하지 않는다. 진짜 중요하고 트래픽이 많은 애만 몇 개 넣는 거다.
+        // 사실 성능테스트의 큰 이슈들은 디비의 쿼리에서 나온다.
+
+        // @QueryHint를 통한 것. snapshot을 생성하지 않는다. 그래서 변경 감지가 일어나지 않는다.
+        Member findMember = memberRepository.findReadOnlyByUsername("member1");
+        // update되지 않는다. readonly이기 때문.
+        findMember.setUsername("member2");
+
+        // 객체 상태가 바뀐 후 flush하면 변경 감지가 돼서 바꼈다는 걸 알게 되고 바꿔준다.
+        // 변경감지의 단점은 원본이 있어야한다. 그래서 객체를 두 개 관리하게 되는 것이다. 즉, 비효율적이다.
+        em.flush();
+
+    }
+
+    @Test
+    public void lock() {
+        Member member1 = new Member("member1", 10);
+        memberRepository.save(member1);
+        em.flush();
+        em.clear();
+
+        // 쿼리를 보면 for update가 붙어있다.
+        List<Member> findMember = memberRepository.findLockByUsername("member1");
+    }
+
 }
